@@ -688,14 +688,16 @@ Respond ONLY in this JSON format (no markdown, no backticks):
       });
 
       const data = await response.json();
+      if (data.error) throw new Error(data.error.message || 'API error');
       const raw = data.content.map(i => i.text || '').join('');
       const clean = raw.replace(/```json|```/g, '').trim();
-      const parsed = JSON.parse(clean);
+      const jsonMatch = clean.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('No JSON in response');
+      const parsed = JSON.parse(jsonMatch[0]);
 
-      translationText.textContent = parsed.translation;
+      translationText.textContent = parsed.translation || 'No translation returned.';
 
-      // Format context paragraphs
-      const paragraphs = parsed.context.split('\n').filter(p => p.trim());
+      const paragraphs = (parsed.context || '').split('\n').filter(p => p.trim());
       contextText.innerHTML = paragraphs.map(p => `<p>${p}</p>`).join('');
 
       loading.style.display = 'none';
@@ -703,7 +705,7 @@ Respond ONLY in this JSON format (no markdown, no backticks):
 
     } catch (err) {
       loading.style.display = 'none';
-      errorMsg.textContent = 'The scrolls could not be read at this time. Please try again.';
+      errorMsg.textContent = 'Error: ' + err.message;
       errorMsg.style.display = 'block';
       console.error(err);
     }
