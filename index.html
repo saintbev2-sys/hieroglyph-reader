@@ -651,22 +651,14 @@
           'anthropic-dangerous-direct-browser-access': 'true'
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-sonnet-4-5',
           max_tokens: 1000,
-          system: `You are a world-class Egyptologist and expert in ancient Egyptian hieroglyphics, Demotic script, Coptic, and hieratic writing. You specialize in reading tablets, papyri, temple walls, and artifacts. 
+          system: `You are an expert Egyptologist. Respond with ONLY a raw JSON object — no markdown, no backticks, no text before or after. Just pure JSON.
 
-When given an image:
-1. Identify what type of ancient Egyptian text or imagery is present
-2. Provide a thoughtful translation or reading of what is shown
-3. Give rich historical and cultural context — the stories, beliefs, rituals, or history this represents
+Format exactly: {"translation":"...","context":"..."}
 
-If the image is NOT ancient Egyptian text but is a modern photo, a different culture's writing, or something else entirely, still describe what you see and relate it to Egyptian history and ancestry if you can.
-
-Respond ONLY in this JSON format (no markdown, no backticks):
-{
-  "translation": "The translation or reading of the inscription/imagery, written in flowing, evocative language. If it's a name, cartouche, spell, prayer, or story — bring it alive.",
-  "context": "Rich historical and cultural context. Who wrote this? When? What does it mean for the people who created it? What stories or beliefs does it represent? Written in multiple paragraphs. Make the ancestors feel real and present."
-}`,
+translation: what the inscription says, in flowing evocative language. Bring it alive.
+context: rich historical background, multiple sentences, make the ancestors feel real and present.`,
           messages: [{
             role: 'user',
             content: [
@@ -688,11 +680,12 @@ Respond ONLY in this JSON format (no markdown, no backticks):
       });
 
       const data = await response.json();
+      console.log('RAW API RESPONSE:', JSON.stringify(data));
       if (data.error) throw new Error(data.error.message || 'API error');
       const raw = data.content.map(i => i.text || '').join('');
       const clean = raw.replace(/```json|```/g, '').trim();
       const jsonMatch = clean.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error('No JSON in response');
+      if (!jsonMatch) throw new Error('Raw: ' + clean.substring(0,200));
       const parsed = JSON.parse(jsonMatch[0]);
 
       translationText.textContent = parsed.translation || 'No translation returned.';
